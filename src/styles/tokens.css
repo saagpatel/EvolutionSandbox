@@ -1,0 +1,48 @@
+:root {
+  color-scheme: dark;
+  --bg: #071118;
+  --bg-elevated: #10212b;
+  --bg-panel: rgba(10, 22, 29, 0.86);
+  --bg-panel-strong: rgba(8, 18, 24, 0.94);
+  --border: rgba(154, 197, 210, 0.14);
+  --border-strong: rgba(154, 197, 210, 0.22);
+  --text: #eef7f7;
+  --muted: #9bb7c0;
+  --accent-coral: #ff875f;
+  --accent-mint: #6ce6cb;
+  --accent-gold: #f9c74f;
+  --accent-green: #7bc97b;
+  --accent-lilac: #9b8cff;
+  --accent-ink: #dfeef3;
+  --danger: #ff6d7a;
+  --shadow: 0 30px 70px rgba(0, 0, 0, 0.28);
+  --radius-lg: 28px;
+  --radius-md: 18px;
+  --radius-sm: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: "Trebuchet MS", "Segoe UI", sans-serif;
+  background:
+    radial-gradient(circle at top left, rgba(249, 199, 79, 0.16), transparent 30%),
+    radial-gradient(circle at top right, rgba(108, 230, 203, 0.16), transparent 28%),
+    linear-gradient(180deg, #0d1d27 0%, #071016 100%);
+  color: var(--text);
+}
+
+button,
+input,
+select {
+  font: inherit;
+}

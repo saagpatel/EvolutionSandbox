@@ -1,0 +1,17 @@
+{
+  "name": "Evolution Sandbox",
+  "short_name": "Evolution Sandbox",
+  "description": "A local-first evolution experiment lab with seeded replay, scenario scripting, and readable adaptation.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#071118",
+  "theme_color": "#10242d",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "64x64",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" fill="none">
+  <rect width="1200" height="630" fill="#071118"/>
+  <rect width="1200" height="630" fill="url(#bg)"/>
+  <circle cx="149" cy="110" r="162" fill="#f9c74f" fill-opacity=".12"/>
+  <circle cx="1030" cy="88" r="188" fill="#6ce6cb" fill-opacity=".1"/>
+  <circle cx="1024" cy="506" r="232" fill="#9b8cff" fill-opacity=".08"/>
+
+  <text x="88" y="118" fill="#9bb7c0" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="28" letter-spacing="7">LOCAL EXPERIMENT LAB</text>
+  <text x="88" y="216" fill="#eef7f7" font-family="Iowan Old Style, Palatino Linotype, Georgia, serif" font-size="78" font-weight="700">Evolution Sandbox</text>
+  <text x="88" y="276" fill="#dfeef3" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="30">Change one world variable, replay it deterministically, and see exactly why</text>
+  <text x="88" y="314" fill="#dfeef3" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="30">the population adapts, bottlenecks, or recovers.</text>
+
+  <g>
+    <rect x="88" y="364" width="214" height="56" rx="28" fill="#16303c" stroke="#294955"/>
+    <text x="116" y="399" fill="#eef7f7" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="24">Balanced World</text>
+    <rect x="318" y="364" width="194" height="56" rx="28" fill="#18252f" stroke="#3d5d67"/>
+    <text x="348" y="399" fill="#eef7f7" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="24">Predator Pulse</text>
+    <rect x="528" y="364" width="246" height="56" rx="28" fill="#18252f" stroke="#4c5c73"/>
+    <text x="558" y="399" fill="#eef7f7" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="24">Cold Snap Recovery</text>
+  </g>
+
+  <g opacity=".95">
+    <rect x="794" y="126" width="312" height="350" rx="34" fill="#0c1d26" stroke="#28414b"/>
+    <text x="834" y="175" fill="#9bb7c0" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="22" letter-spacing="3">READABLE EVOLUTION</text>
+    <path d="M838 362C875 314 909 297 951 300C995 303 1015 333 1056 336C1074 338 1088 334 1101 324" stroke="#ff875f" stroke-width="7" stroke-linecap="round"/>
+    <path d="M838 320C875 272 909 255 951 258C995 261 1015 290 1056 294C1074 296 1088 292 1101 282" stroke="#6ce6cb" stroke-width="7" stroke-linecap="round"/>
+    <path d="M838 278C875 230 909 213 951 216C995 219 1015 248 1056 252C1074 254 1088 250 1101 240" stroke="#9b8cff" stroke-width="7" stroke-linecap="round"/>
+    <circle cx="892" cy="219" r="18" fill="#6ce6cb"/>
+    <ellipse cx="948" cy="268" rx="28" ry="20" fill="#7bc97b"/>
+    <ellipse cx="1018" cy="316" rx="34" ry="23" fill="#ff875f"/>
+    <path d="M842 417h226" stroke="#294955" stroke-width="2"/>
+    <text x="838" y="450" fill="#eef7f7" font-family="Trebuchet MS, Segoe UI, sans-serif" font-size="24">One species · four traits · four pressures</text>
+  </g>
+
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1200" y2="630" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#0c1b24"/>
+      <stop offset=".58" stop-color="#071118"/>
+      <stop offset="1" stop-color="#0d2028"/>
+    </linearGradient>
+  </defs>
+</svg>
