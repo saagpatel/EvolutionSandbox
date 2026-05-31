@@ -40,7 +40,7 @@ This is intentionally not:
 
 ## Current State
 
-Portfolio truth currently marks this project as `active` with `minimum-viable` context. Phase 104 recovered minimum-viable context so future sessions can resume without rediscovery.
+Portfolio truth marks this project as `Release Frozen` (static-host, static SPA + Canvas evolution simulation). A full portfolio disposition is in `docs/PORTFOLIO-DISPOSITION.md`.
 
 ## Stack
 
@@ -56,10 +56,11 @@ npm run dev
 
 ## Known Risks
 
-- This repo only has minimum-viable recovery context today; deeper handoff details may still live in the README and supporting docs.
+- Deterministic replay correctness is load-bearing for the research-tool claim; verify across browser and runtime updates.
+- Canvas performance on lower-end devices has not been profiled against a production population size budget.
 
 ## Next Recommended Move
 
-Use this context plus the README and supporting docs to resume the next active task, then promote the repo beyond minimum-viable by capturing a dedicated handoff, roadmap, or discovery artifact.
+Verify the live deployment at `evolutionsandbox.vercel.app` matches the current code state. See `docs/PORTFOLIO-DISPOSITION.md` for the reactivation procedure and resurface conditions.
 
 <!-- portfolio-context:end -->

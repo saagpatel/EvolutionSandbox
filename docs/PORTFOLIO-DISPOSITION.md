@@ -126,8 +126,7 @@ concerns:
 4. **Canvas performance budget** — discrete-generation evolution
    with population sizes (TBD per scenario) can spike CPU. Verify
    graceful behavior on lower-end devices.
-5. **Lab persistence** — saved experiments stored locally
-   (`localStorage` or `IndexedDB`?). Document data lifecycle.
+5. **Lab persistence** — both layers are documented in `docs/architecture.md`: `localStorage` for settings, selected scenario, and current surface; `IndexedDB` (via idb-keyval) for custom scenarios and saved experiment records. Verify these storage contracts survive a Vite or browser update.
 6. **Update memory record** — this project wasn't in the
    `MEMORY.md` project-files list per resume prompt. Add an
    entry.
