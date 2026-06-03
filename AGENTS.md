@@ -64,3 +64,8 @@ npm run dev
 Verify the live deployment at `evolutionsandbox.vercel.app` matches the current code state. See `docs/PORTFOLIO-DISPOSITION.md` for the reactivation procedure and resurface conditions.
 
 <!-- portfolio-context:end -->
+
+<!-- secondbrain-breadcrumb -->
+## SecondBrain knowledge vault
+
+Prior lessons, decisions, and context for this project live in SecondBrain at `wiki/maps/projects/evolution-sandbox.md`. The whole vault is searchable via the `engraph` MCP — query it for this project + its stack before non-trivial work.
