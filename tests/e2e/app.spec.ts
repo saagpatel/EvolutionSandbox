@@ -94,3 +94,56 @@ test('supports keyboard switching across workspace tabs', async ({ page }) => {
   await page.keyboard.press('Home')
   await expect(page.getByRole('tab', { name: 'Sandbox', selected: true })).toBeFocused()
 })
+
+test('shows lab recovery controls for quarantined records without exposing raw payloads', async ({ page }) => {
+  await page.goto('/')
+  await expect(page.getByRole('heading', { name: 'Evolution Sandbox' })).toBeVisible()
+
+  await page.evaluate(async () => {
+    await new Promise<void>((resolve, reject) => {
+      const request = indexedDB.open('evolution-sandbox-lab-experiments', 1)
+      request.onupgradeneeded = () => {
+        if (!request.result.objectStoreNames.contains('records')) {
+          request.result.createObjectStore('records')
+        }
+      }
+      request.onerror = () => reject(request.error)
+      request.onsuccess = () => {
+        const db = request.result
+        const tx = db.transaction('records', 'readwrite')
+        tx.objectStore('records').put(
+          {
+            schemaVersion: 'legacy-schema',
+            rulesetVersion: 'v2.1.0',
+            savedAt: '2026-04-13T08:00:00.000Z',
+            payload: {
+              id: 'legacy-experiment',
+              name: 'Hidden payload secret xyz',
+            },
+          },
+          'legacy-experiment',
+        )
+        tx.oncomplete = () => {
+          db.close()
+          resolve()
+        }
+        tx.onerror = () => reject(tx.error)
+      }
+    })
+  })
+
+  await page.reload()
+  await page.getByRole('tab', { name: 'Lab' }).click()
+
+  await expect(page.getByRole('heading', { name: 'Incompatible lab records' })).toBeVisible()
+  await expect(page.getByText('legacy-experiment')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Export recovery data' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Clear recovery records' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Restore experiment legacy-experiment' })).toBeVisible()
+  await expect(page.getByText('Hidden payload secret xyz')).toHaveCount(0)
+
+  await page.getByRole('button', { name: 'Clear recovery records' }).click()
+  await expect(page.getByRole('button', { name: 'Confirm clear recovery records' })).toBeFocused()
+  await page.getByRole('button', { name: 'Cancel clear' }).click()
+  await expect(page.getByRole('button', { name: 'Clear recovery records' })).toBeFocused()
+})

@@ -9,6 +9,7 @@ They are intentionally separate from:
 - `localStorage` session payloads
 - IndexedDB lab records
 - internal persistence wrappers such as `PersistedPayload<T>`
+- local quarantine/recovery JSON, which is labeled `local recovery data` and is not a portable scenario or experiment artifact
 
 ## Artifact versions
 
@@ -85,6 +86,7 @@ The app does not:
 - execute imported code
 - trust file extensions or the HTML `accept` attribute alone
 - expose raw storage wrappers as a file format
+- treat local recovery exports as interchangeable with portable artifacts
 
 ## Why this exists
 

@@ -27,6 +27,7 @@ import type {
   AppSurface,
   ComparisonSummary,
   Creature,
+  LabQuarantineSummary,
   QuickstartState,
   RunRecord,
   RunStatus,
@@ -44,9 +45,12 @@ import {
   formatFileSize,
 } from '@/app/accessibility'
 import {
+  buildLabQuarantineRecoveryArtifact,
+  clearQuarantineRecords,
   deleteExperimentRecord,
   deleteScenarioRecord,
   loadLabData,
+  restoreQuarantinedRecord,
   saveExperimentRecord,
   saveScenarioRecord,
 } from '@/infra/labStorage'
@@ -72,13 +76,14 @@ export interface SessionState {
   quickstart: QuickstartState
   labReady: boolean
   labSort: 'updated' | 'oldest' | 'population'
+  quarantine: LabQuarantineSummary[]
 }
 
 type ConfigField = Exclude<keyof SimulationConfig, 'seed' | 'scenarioId'>
 type ScenarioField = 'name' | 'description'
 
 type SessionAction =
-  | { type: 'LOAD_LAB_DATA'; customScenarios: ScenarioDefinition[]; savedExperiments: SavedExperiment[]; notice: AppNotice | null }
+  | { type: 'LOAD_LAB_DATA'; customScenarios: ScenarioDefinition[]; savedExperiments: SavedExperiment[]; quarantine: LabQuarantineSummary[]; notice: AppNotice | null }
   | { type: 'NAVIGATE'; surface: AppSurface }
   | { type: 'SET_CONFIG_FIELD'; field: ConfigField; value: number }
   | { type: 'LOAD_SCENARIO'; scenario: ScenarioDefinition }
@@ -174,6 +179,7 @@ function buildInitialState(): SessionState {
     },
     labReady: false,
     labSort: 'updated',
+    quarantine: [],
   }
 }
 
@@ -197,6 +203,7 @@ function reducer(state: SessionState, action: SessionAction): SessionState {
             : initializeRun({ ...state.config, scenarioId: activeScenario.id }, activeScenario),
         notice: action.notice ?? state.notice,
         labReady: true,
+        quarantine: action.quarantine,
       }
     }
     case 'NAVIGATE':
@@ -444,6 +451,9 @@ export interface SessionController {
   updateExperiment: (experimentId: string, patch: Partial<Pick<SavedExperiment, 'name' | 'note'>>) => Promise<void>
   deleteExperiment: (experimentId: string) => Promise<void>
   openExperiment: (experimentId: string) => Promise<void>
+  restoreQuarantinedRecord: (quarantineId: string) => Promise<void>
+  exportQuarantine: () => Promise<void>
+  clearQuarantine: () => Promise<void>
   dismissQuickstart: () => void
   comparisonEnabled: boolean
 }
@@ -493,6 +503,7 @@ export function useSessionController(): SessionController {
         type: 'LOAD_LAB_DATA',
         customScenarios: loaded.scenarios,
         savedExperiments: loaded.experiments,
+        quarantine: loaded.quarantine,
         notice: loaded.notice,
       })
     })()
@@ -1224,6 +1235,60 @@ export function useSessionController(): SessionController {
     })
   }
 
+  async function applyLoadedLabData(
+    loaded: Awaited<ReturnType<typeof loadLabData>>,
+    notice: AppNotice | null = loaded.notice,
+  ) {
+    dispatch({
+      type: 'LOAD_LAB_DATA',
+      customScenarios: loaded.scenarios,
+      savedExperiments: loaded.experiments,
+      quarantine: loaded.quarantine,
+      notice,
+    })
+  }
+
+  async function restoreQuarantinedRecordById(quarantineId: string) {
+    const restored = await restoreQuarantinedRecord(quarantineId)
+    if (!restored.ok) {
+      setNotice(restored.notice)
+      return
+    }
+
+    const loaded = await loadLabData()
+    const stillQuarantined = loaded.quarantine.some((entry) => entry.id === quarantineId)
+    await applyLoadedLabData(
+      loaded,
+      stillQuarantined
+        ? {
+            level: 'warning',
+            message: 'The restored record is still incompatible, so it was moved back to local recovery without data loss.',
+          }
+        : restored.notice,
+    )
+  }
+
+  async function exportQuarantine() {
+    const artifact = await buildLabQuarantineRecoveryArtifact()
+    downloadJsonFile(
+      'evolution-sandbox-local-recovery-data.json',
+      `${JSON.stringify(artifact, null, 2)}\n`,
+    )
+    setNotice({
+      level: 'info',
+      message: 'Local recovery data was exported as a JSON file.',
+    })
+  }
+
+  async function clearQuarantine() {
+    await clearQuarantineRecords()
+    const loaded = await loadLabData()
+    await applyLoadedLabData(loaded, {
+      level: 'info',
+      message: 'Local recovery records were cleared.',
+    })
+  }
+
   return {
     state,
     availableScenarios,
@@ -1286,6 +1351,9 @@ export function useSessionController(): SessionController {
     updateExperiment,
     deleteExperiment,
     openExperiment,
+    restoreQuarantinedRecord: restoreQuarantinedRecordById,
+    exportQuarantine,
+    clearQuarantine,
     dismissQuickstart: () => dispatch({ type: 'DISMISS_QUICKSTART' }),
     comparisonEnabled,
   }

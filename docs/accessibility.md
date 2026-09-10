@@ -62,4 +62,7 @@ When `prefers-reduced-motion: reduce` is active:
 - notices and important state changes are announced without becoming noisy
 - chart takeaways are available in text, not only graph form
 - import review can be completed and dismissed without a mouse
+- Lab recovery, when present, exposes restore, export, and confirmed clear without putting raw payloads in the DOM
 - automated accessibility smoke stays green in unit tests before the manual screen-reader pass
+
+Automated checks do not replace a real assistive-technology pass. VoiceOver, NVDA, and similar proof still belong in `docs/screen-reader-pass.md`.
