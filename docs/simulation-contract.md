@@ -44,8 +44,11 @@ The app uses two persistence layers.
   - saved experiments
   - compact completed-run summaries
   - the run recipe needed to regenerate the full run locally
+  - quarantined incompatible records in a dedicated recovery database
 
 The lab never persists full generation snapshots or full run history archives.
+
+Incompatible lab records are not auto-migrated. Compatible records continue to load. Incompatible originals are preserved in quarantine when recovery storage can be written.
 
 ## Comparison
 

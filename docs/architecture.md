@@ -28,7 +28,8 @@ The UI does not compute fitness, comparison, or summaries on its own. It only re
 - `src/infra`
   - lightweight session persistence in `localStorage`
   - IndexedDB-backed scenario and experiment storage
-  - schema/version handling
+  - dedicated IndexedDB quarantine/recovery storage for incompatible lab records
+  - schema/version handling without silent auto-migration
   - browser file import/export helpers
 
 ## Public artifact boundary
@@ -54,8 +55,11 @@ The app now uses two persistence layers:
   - custom scenarios
   - saved experiment records
   - compact completed-run summaries plus deterministic replay recipes
+  - quarantined incompatible lab records in a dedicated recovery database
 
 The lab does not persist full creature-by-creature run history. Reopened experiments are regenerated locally from the saved recipe.
+
+Incompatible IndexedDB records are copied into the quarantine namespace before the source is deleted. If that copy cannot be written, the original record is kept and the session reports a partial-recovery warning. This recovery envelope is not a portable scenario or experiment artifact, and it is not an automatic schema migration.
 
 Portable artifacts are not direct dumps of those internal storage records.
 

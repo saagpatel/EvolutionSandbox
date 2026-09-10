@@ -134,7 +134,24 @@ Expected:
 - focus returns to a sensible place after canceling or closing
 - importing does not feel ambiguous
 
-### 7. Reduced-motion sanity check
+### 7. Lab recovery flow
+
+Steps:
+
+1. Open `Lab` with at least one quarantined incompatible record, if one exists in the profile.
+2. Read the local recovery section.
+3. Move to Restore, Export recovery data, and Clear recovery records.
+4. Open the clear confirmation, then cancel it.
+5. Confirm that the reason and versions are understandable without hearing a raw payload dump.
+
+Expected:
+
+- the recovery copy is described as local recovery, not as a portable import
+- restore, export, and confirmed clear are reachable from the keyboard
+- canceling clear returns focus to a sensible control
+- this automated-environment run does not replace a real profile/upgrade/quota or assistive-technology pass
+
+### 8. Reduced-motion sanity check
 
 Steps:
 
