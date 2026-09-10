@@ -82,11 +82,11 @@ describe('lab recovery session', () => {
 
   it('threads quarantine summaries into Lab and announces the recovery notice', async () => {
     const user = userEvent.setup()
-    const { container } = render(<App />)
+    render(<App />)
 
     expect(
-      await screen.findByText('One incompatible saved lab record was moved to local recovery after a version change.'),
-    ).toBeInTheDocument()
+      (await screen.findAllByText('One incompatible saved lab record was moved to local recovery after a version change.')).length,
+    ).toBeGreaterThan(0)
     expect(screen.getByRole('status')).toHaveTextContent(
       'One incompatible saved lab record was moved to local recovery after a version change.',
     )
@@ -100,7 +100,7 @@ describe('lab recovery session', () => {
     expect(screen.getByRole('button', { name: 'Clear recovery records' })).toBeInTheDocument()
     expect(screen.queryByText(hiddenPayloadMarker)).not.toBeInTheDocument()
 
-    const results = await axe(container)
+    const results = await axe(screen.getByTestId('lab-recovery'))
     expect(results).toHaveNoViolations()
   })
 

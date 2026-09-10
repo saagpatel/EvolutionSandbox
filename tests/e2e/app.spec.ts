@@ -136,7 +136,7 @@ test('shows lab recovery controls for quarantined records without exposing raw p
   await page.getByRole('tab', { name: 'Lab' }).click()
 
   await expect(page.getByRole('heading', { name: 'Incompatible lab records' })).toBeVisible()
-  await expect(page.getByText('legacy-experiment')).toBeVisible()
+  await expect(page.getByText('legacy-experiment', { exact: true })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Export recovery data' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Clear recovery records' })).toBeVisible()
   await expect(page.getByRole('button', { name: 'Restore experiment legacy-experiment' })).toBeVisible()

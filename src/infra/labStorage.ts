@@ -38,6 +38,12 @@ export interface LabQuarantineRecoveryArtifact {
   records: Array<LabQuarantineSummary & { rawRecord: unknown }>
 }
 
+export const labQuarantineWriter = {
+  write(id: string, record: LabQuarantineRecord) {
+    return idbKeyval.set(id, record, QUARANTINE_STORE)
+  },
+}
+
 function wrapPayload<T>(payload: T): PersistedPayload<T> {
   return {
     schemaVersion: STORAGE_SCHEMA_VERSION,
@@ -204,7 +210,7 @@ async function quarantineIncompatibleEntries(
       try {
         const existing = await idbKeyval.get<LabQuarantineRecord>(record.id, QUARANTINE_STORE)
         if (!isQuarantineRecord(existing)) {
-          await idbKeyval.set(record.id, record, QUARANTINE_STORE)
+          await labQuarantineWriter.write(record.id, record)
         }
         await idbKeyval.del(entry.key, sourceStore)
         return 'quarantined' as const
