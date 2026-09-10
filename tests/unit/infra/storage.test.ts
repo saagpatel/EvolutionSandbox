@@ -1,6 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { createStore, get, set } from 'idb-keyval'
-import * as idbKeyval from 'idb-keyval'
 
 import { DEFAULT_CONFIG, STORAGE_KEYS, STORAGE_SCHEMA_VERSION, SIM_RULESET_VERSION } from '@/domain/config'
 import { createScenarioDraft } from '@/domain/scenarios'
@@ -16,6 +15,7 @@ import {
   clearQuarantineRecords,
   deleteExperimentRecord,
   deleteScenarioRecord,
+  labQuarantineWriter,
   loadLabData,
   restoreQuarantinedRecord,
   saveExperimentRecord,
@@ -181,20 +181,21 @@ describe('storage adapters', () => {
     }
     await set('legacy-scenario', incompatibleRecord, incompatibleScenarioStore)
 
-    const originalSet = idbKeyval.set.bind(idbKeyval)
-    vi.spyOn(idbKeyval, 'set').mockImplementation(async (key, value, store) => {
-      if (value && typeof value === 'object' && 'rawRecord' in value) {
-        throw new Error('quota exceeded')
-      }
-      return originalSet(key, value, store)
-    })
+    const originalWrite = labQuarantineWriter.write.bind(labQuarantineWriter)
+    labQuarantineWriter.write = async () => {
+      throw new Error('quota exceeded')
+    }
 
-    const loaded = await loadLabData()
-    expect(loaded.scenarios).toHaveLength(0)
-    expect(loaded.quarantine).toHaveLength(0)
-    expect(loaded.notice?.level).toBe('warning')
-    expect(loaded.notice?.message).toContain('could not be moved to local recovery')
-    expect(await get('legacy-scenario', incompatibleScenarioStore)).toEqual(incompatibleRecord)
+    try {
+      const loaded = await loadLabData()
+      expect(loaded.scenarios).toHaveLength(0)
+      expect(loaded.quarantine).toHaveLength(0)
+      expect(loaded.notice?.level).toBe('warning')
+      expect(loaded.notice?.message).toContain('could not be moved to local recovery')
+      expect(await get('legacy-scenario', incompatibleScenarioStore)).toEqual(incompatibleRecord)
+    } finally {
+      labQuarantineWriter.write = originalWrite
+    }
   })
 
   it('restores a quarantined record to its original key and re-quarantines it on the next incompatible load', async () => {
