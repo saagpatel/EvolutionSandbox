@@ -1,0 +1,6 @@
+{
+  "$schema": "https://www.cursor.com/schemas/environment.schema.json",
+  "name": "EvolutionSandbox",
+  "install": "bash .cursor/install.sh",
+  "disableAllMcpServers": true
+}

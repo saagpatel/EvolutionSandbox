@@ -1,15 +1,23 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { createStore, set } from 'idb-keyval'
+import { createStore, get, set } from 'idb-keyval'
 
 import { DEFAULT_CONFIG, STORAGE_KEYS, STORAGE_SCHEMA_VERSION, SIM_RULESET_VERSION } from '@/domain/config'
 import { createScenarioDraft } from '@/domain/scenarios'
 import type { SavedExperiment } from '@/domain/types'
 import {
+  LAB_QUARANTINE_RECOVERY_LABEL,
+  LAB_QUARANTINE_RECOVERY_TYPE,
+  LAB_QUARANTINE_RECOVERY_VERSION,
   LAB_STORAGE_NAMES,
+  buildLabQuarantineRecoveryArtifact,
+  buildQuarantineId,
   clearLabData,
+  clearQuarantineRecords,
   deleteExperimentRecord,
   deleteScenarioRecord,
+  labQuarantineWriter,
   loadLabData,
+  restoreQuarantinedRecord,
   saveExperimentRecord,
   saveScenarioRecord,
 } from '@/infra/labStorage'
@@ -100,10 +108,129 @@ describe('storage adapters', () => {
     expect(emptied.experiments).toHaveLength(0)
   })
 
-  it('clears incompatible lab records and returns a warning notice', async () => {
+  it('keeps compatible lab records and quarantines incompatible originals', async () => {
     const incompatibleScenarioStore = createStore(LAB_STORAGE_NAMES.scenariosDb, LAB_STORAGE_NAMES.storeName)
     const incompatibleExperimentStore = createStore(LAB_STORAGE_NAMES.experimentsDb, LAB_STORAGE_NAMES.storeName)
+    const quarantineStore = createStore(LAB_STORAGE_NAMES.quarantineDb, LAB_STORAGE_NAMES.storeName)
+    const incompatibleScenario = {
+      schemaVersion: 'legacy-schema',
+      rulesetVersion: SIM_RULESET_VERSION,
+      savedAt: new Date('2026-04-13T08:00:00.000Z').toISOString(),
+      payload: {
+        ...sampleScenario,
+        id: 'legacy-scenario',
+        name: 'PAYLOAD_SHOULD_NOT_RENDER_scenario',
+      },
+    }
+    const incompatibleExperiment = {
+      schemaVersion: STORAGE_SCHEMA_VERSION,
+      rulesetVersion: 'legacy-ruleset',
+      savedAt: new Date('2026-04-13T08:00:00.000Z').toISOString(),
+      payload: sampleExperiment,
+    }
 
+    await saveScenarioRecord(sampleScenario)
+    await saveExperimentRecord(sampleExperiment)
+    await set('legacy-scenario', incompatibleScenario, incompatibleScenarioStore)
+    await set('legacy-experiment', incompatibleExperiment, incompatibleExperimentStore)
+
+    const loaded = await loadLabData()
+    expect(loaded.scenarios.map((scenario) => scenario.id)).toEqual([sampleScenario.id])
+    expect(loaded.experiments.map((experiment) => experiment.id)).toEqual([sampleExperiment.id])
+    expect(loaded.quarantine).toHaveLength(2)
+    expect(loaded.notice?.level).toBe('warning')
+    expect(loaded.notice?.message).toContain('moved to local recovery')
+    expect(loaded.quarantine.map((entry) => entry.originalKey).sort()).toEqual(['legacy-experiment', 'legacy-scenario'])
+
+    const quarantinedScenario = await get(buildQuarantineId('scenario', 'legacy-scenario'), quarantineStore)
+    const quarantinedExperiment = await get(buildQuarantineId('experiment', 'legacy-experiment'), quarantineStore)
+    expect(quarantinedScenario).toMatchObject({
+      kind: 'scenario',
+      originalKey: 'legacy-scenario',
+      observedSchemaVersion: 'legacy-schema',
+      observedRulesetVersion: SIM_RULESET_VERSION,
+      originalSavedAt: incompatibleScenario.savedAt,
+      rawRecord: incompatibleScenario,
+    })
+    expect(quarantinedExperiment).toMatchObject({
+      kind: 'experiment',
+      originalKey: 'legacy-experiment',
+      observedSchemaVersion: STORAGE_SCHEMA_VERSION,
+      observedRulesetVersion: 'legacy-ruleset',
+      rawRecord: incompatibleExperiment,
+    })
+    expect(await get('legacy-scenario', incompatibleScenarioStore)).toBeUndefined()
+    expect(await get('legacy-experiment', incompatibleExperimentStore)).toBeUndefined()
+
+    const reloaded = await loadLabData()
+    expect(reloaded.notice).toBeNull()
+    expect(reloaded.quarantine).toHaveLength(2)
+    expect(reloaded.quarantine.map((entry) => entry.id).sort()).toEqual(loaded.quarantine.map((entry) => entry.id).sort())
+    expect(reloaded.quarantine.map((entry) => entry.quarantinedAt).sort()).toEqual(
+      loaded.quarantine.map((entry) => entry.quarantinedAt).sort(),
+    )
+  })
+
+  it('retains source records when quarantine write fails', async () => {
+    const incompatibleScenarioStore = createStore(LAB_STORAGE_NAMES.scenariosDb, LAB_STORAGE_NAMES.storeName)
+    const incompatibleRecord = {
+      schemaVersion: 'legacy-schema',
+      rulesetVersion: SIM_RULESET_VERSION,
+      savedAt: new Date('2026-04-13T08:00:00.000Z').toISOString(),
+      payload: sampleScenario,
+    }
+    await set('legacy-scenario', incompatibleRecord, incompatibleScenarioStore)
+
+    const originalWrite = labQuarantineWriter.write.bind(labQuarantineWriter)
+    labQuarantineWriter.write = async () => {
+      throw new Error('quota exceeded')
+    }
+
+    try {
+      const loaded = await loadLabData()
+      expect(loaded.scenarios).toHaveLength(0)
+      expect(loaded.quarantine).toHaveLength(0)
+      expect(loaded.notice?.level).toBe('warning')
+      expect(loaded.notice?.message).toContain('could not be moved to local recovery')
+      expect(await get('legacy-scenario', incompatibleScenarioStore)).toEqual(incompatibleRecord)
+    } finally {
+      labQuarantineWriter.write = originalWrite
+    }
+  })
+
+  it('restores a quarantined record to its original key and re-quarantines it on the next incompatible load', async () => {
+    const scenarioStore = createStore(LAB_STORAGE_NAMES.scenariosDb, LAB_STORAGE_NAMES.storeName)
+    const quarantineStore = createStore(LAB_STORAGE_NAMES.quarantineDb, LAB_STORAGE_NAMES.storeName)
+    const incompatibleScenario = {
+      schemaVersion: 'legacy-schema',
+      rulesetVersion: SIM_RULESET_VERSION,
+      savedAt: new Date('2026-04-13T08:00:00.000Z').toISOString(),
+      payload: sampleScenario,
+    }
+    await set('legacy-scenario', incompatibleScenario, scenarioStore)
+
+    const loaded = await loadLabData()
+    const quarantineId = buildQuarantineId('scenario', 'legacy-scenario')
+    expect(loaded.quarantine.map((entry) => entry.id)).toEqual([quarantineId])
+
+    const restored = await restoreQuarantinedRecord(quarantineId)
+    expect(restored.ok).toBe(true)
+    expect(await get('legacy-scenario', scenarioStore)).toEqual(incompatibleScenario)
+    expect(await get(quarantineId, quarantineStore)).toBeUndefined()
+
+    const reloaded = await loadLabData()
+    expect(reloaded.quarantine).toHaveLength(1)
+    expect(reloaded.quarantine[0]?.originalKey).toBe('legacy-scenario')
+    expect(await get('legacy-scenario', scenarioStore)).toBeUndefined()
+    expect(await get(quarantineId, quarantineStore)).toMatchObject({
+      rawRecord: incompatibleScenario,
+    })
+  })
+
+  it('clears quarantine without deleting compatible lab records', async () => {
+    const scenarioStore = createStore(LAB_STORAGE_NAMES.scenariosDb, LAB_STORAGE_NAMES.storeName)
+    await saveScenarioRecord(sampleScenario)
+    await saveExperimentRecord(sampleExperiment)
     await set(
       'legacy-scenario',
       {
@@ -112,26 +239,45 @@ describe('storage adapters', () => {
         savedAt: new Date('2026-04-13T08:00:00.000Z').toISOString(),
         payload: sampleScenario,
       },
-      incompatibleScenarioStore,
+      scenarioStore,
     )
-    await set(
-      'legacy-experiment',
-      {
-        schemaVersion: STORAGE_SCHEMA_VERSION,
-        rulesetVersion: 'legacy-ruleset',
-        savedAt: new Date('2026-04-13T08:00:00.000Z').toISOString(),
-        payload: sampleExperiment,
-      },
-      incompatibleExperimentStore,
-    )
+
+    await loadLabData()
+    await clearQuarantineRecords()
 
     const loaded = await loadLabData()
-    expect(loaded.scenarios).toHaveLength(0)
-    expect(loaded.experiments).toHaveLength(0)
-    expect(loaded.notice?.level).toBe('warning')
-    expect(loaded.notice?.message).toContain('incompatible')
+    expect(loaded.quarantine).toHaveLength(0)
+    expect(loaded.scenarios.map((scenario) => scenario.id)).toEqual([sampleScenario.id])
+    expect(loaded.experiments.map((experiment) => experiment.id)).toEqual([sampleExperiment.id])
+    expect(await get(sampleScenario.id, scenarioStore)).toBeTruthy()
+  })
 
-    const reloaded = await loadLabData()
-    expect(reloaded.notice).toBeNull()
+  it('exports a versioned local recovery envelope with JSON-safe raw records', async () => {
+    const experimentStore = createStore(LAB_STORAGE_NAMES.experimentsDb, LAB_STORAGE_NAMES.storeName)
+    const incompatibleExperiment = {
+      schemaVersion: STORAGE_SCHEMA_VERSION,
+      rulesetVersion: 'legacy-ruleset',
+      savedAt: new Date('2026-04-13T08:00:00.000Z').toISOString(),
+      payload: sampleExperiment,
+    }
+    await set('legacy-experiment', incompatibleExperiment, experimentStore)
+    await loadLabData()
+
+    const artifact = await buildLabQuarantineRecoveryArtifact()
+    expect(artifact.recoveryType).toBe(LAB_QUARANTINE_RECOVERY_TYPE)
+    expect(artifact.recoverySchemaVersion).toBe(LAB_QUARANTINE_RECOVERY_VERSION)
+    expect(artifact.label).toBe(LAB_QUARANTINE_RECOVERY_LABEL)
+    expect(artifact).not.toHaveProperty('artifactType')
+    expect(artifact.records).toHaveLength(1)
+    expect(artifact.records[0]).toMatchObject({
+      kind: 'experiment',
+      originalKey: 'legacy-experiment',
+      observedSchemaVersion: STORAGE_SCHEMA_VERSION,
+      observedRulesetVersion: 'legacy-ruleset',
+      originalSavedAt: incompatibleExperiment.savedAt,
+      reason: expect.stringContaining('ruleset'),
+      rawRecord: incompatibleExperiment,
+    })
+    expect(JSON.parse(JSON.stringify(artifact))).toEqual(artifact)
   })
 })

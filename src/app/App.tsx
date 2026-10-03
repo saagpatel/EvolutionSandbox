@@ -664,6 +664,7 @@ export default function App() {
               experiments={state.savedExperiments}
               baselineExperimentId={state.baselineExperimentId}
               sort={state.labSort}
+              quarantine={state.quarantine}
               onSetSort={controller.setLabSort}
               onSetBaseline={controller.setBaselineExperiment}
               onOpenExperiment={(experimentId) => void controller.openExperiment(experimentId)}
@@ -671,6 +672,9 @@ export default function App() {
               onDeleteExperiment={(experimentId) => void controller.deleteExperiment(experimentId)}
               onExportExperiment={(experimentId) => void controller.exportExperiment(experimentId)}
               onImportExperiment={(file) => void handleExperimentImportSelection(file)}
+              onRestoreQuarantine={(quarantineId) => void controller.restoreQuarantinedRecord(quarantineId)}
+              onExportQuarantine={() => void controller.exportQuarantine()}
+              onClearQuarantine={() => void controller.clearQuarantine()}
             />
           </Suspense>
         </main>

@@ -121,6 +121,33 @@ Expected:
 - imported runs can be reopened deterministically
 - blocked or incompatible files explain why they were rejected
 
+## Lab recovery flow
+
+Automated tests cover mixed compatible/incompatible IndexedDB records, raw retention, idempotent reloads, quarantine-write failure, restore, clear isolation, export shape, visible controls, confirmation, and focus.
+
+Those checks do **not** prove:
+
+- a real browser profile surviving an actual schema or ruleset upgrade
+- IndexedDB quota or disk-pressure behavior on a reviewer machine
+- assistive-technology announcements in VoiceOver or NVDA
+
+Human/platform proof for those boundaries stays in this matrix and `docs/screen-reader-pass.md`.
+
+### Recovery controls
+
+Steps:
+- seed or encounter an incompatible IndexedDB lab record
+- open `Lab`
+- confirm the recovery section shows count, kind, key, versions, timestamp, and reason
+- restore, export, and cancel a clear
+- confirm a clear only after the explicit confirm control
+
+Expected:
+- compatible experiments remain listed
+- raw payloads are not shown in the page
+- clear asks for confirmation and does not wipe saved experiments
+- export is labeled as local recovery data, not a portable artifact
+
 ## Reviewer path
 
 Steps:

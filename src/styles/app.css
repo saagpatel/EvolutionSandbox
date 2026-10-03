@@ -703,6 +703,16 @@ input[type='range'] {
   background: rgba(108, 230, 203, 0.1);
 }
 
+.lab-card--recovery {
+  border-color: rgba(249, 199, 79, 0.55);
+  background: rgba(249, 199, 79, 0.08);
+}
+
+#lab-experiments-heading:focus-visible {
+  outline: 2px solid rgba(108, 230, 203, 0.95);
+  outline-offset: 4px;
+}
+
 .lab-card__seed {
   color: var(--muted);
   font-size: 0.88rem;
