@@ -16,15 +16,19 @@ vi.mock('@/infra/labStorage', () => ({
   loadLabData: async () => ({
     scenarios: [],
     experiments: [],
+    quarantine: [],
     notice: {
       level: 'warning' as const,
-      message: 'One incompatible saved lab record was cleared after a version change.',
+      message: 'One incompatible saved lab record was moved to local recovery after a version change.',
     },
   }),
   saveScenarioRecord: vi.fn(),
   deleteScenarioRecord: vi.fn(),
   saveExperimentRecord: vi.fn(),
   deleteExperimentRecord: vi.fn(),
+  restoreQuarantinedRecord: vi.fn(),
+  clearQuarantineRecords: vi.fn(),
+  buildLabQuarantineRecoveryArtifact: vi.fn(),
 }))
 
 import App from '@/app/App'
@@ -35,8 +39,8 @@ describe('notices', () => {
 
     expect(
       await screen.findByRole('status'),
-    ).toHaveTextContent('One incompatible saved lab record was cleared after a version change.')
-    expect(screen.getAllByText('One incompatible saved lab record was cleared after a version change.').length).toBeGreaterThan(0)
+    ).toHaveTextContent('One incompatible saved lab record was moved to local recovery after a version change.')
+    expect(screen.getAllByText('One incompatible saved lab record was moved to local recovery after a version change.').length).toBeGreaterThan(0)
     expect(
       screen.queryByText('Saved session settings were cleared because the simulation contract changed.'),
     ).not.toBeInTheDocument()

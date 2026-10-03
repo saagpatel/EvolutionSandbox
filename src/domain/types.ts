@@ -8,6 +8,7 @@ export type EventFlag = (typeof EVENT_FLAGS)[number]
 export type RunStatus = 'idle' | 'running' | 'paused' | 'completed'
 export type AppSurface = 'sandbox' | 'scenarios' | 'lab'
 export type ArtifactType = 'scenario' | 'experiment'
+export type LabRecordKind = 'scenario' | 'experiment'
 export type ImportReviewAction = 'import' | 'dedupe' | 'blocked'
 export type QuickstartAction =
   | 'loadBalancedWorld'
@@ -188,6 +189,17 @@ export interface PersistedPayload<T> {
   rulesetVersion: string
   savedAt: string
   payload: T
+}
+
+export interface LabQuarantineSummary {
+  id: string
+  kind: LabRecordKind
+  originalKey: string
+  observedSchemaVersion: string | null
+  observedRulesetVersion: string | null
+  originalSavedAt: string | null
+  quarantinedAt: string
+  reason: string
 }
 
 export interface Announcement {
